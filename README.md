@@ -44,7 +44,7 @@ Copy CLIENT to ./src/CLIENT/
 
 Copy to target
 ```
-./start
+./install.sh
 ```
 Have fun.
 
