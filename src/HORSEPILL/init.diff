@@ -1,0 +1,14 @@
+--- init	2020-03-27 11:22:49.120000000 -0400
++++ init.new	2020-03-27 11:23:09.644000000 -0400
+@@ -334,10 +334,6 @@
+ mount -n -o move /proc ${rootmnt}/proc
+ 
+ # Chain to real filesystem
+-if [ -z "$drop_caps" ] && command -v switch_root >/dev/null 2>&1; then
+-	exec switch_root ${rootmnt} ${init} "$@" <${rootmnt}/dev/console >${rootmnt}/dev/console
+-elif command -v run-init >/dev/null 2>&1; then
+-	exec run-init ${drop_caps} ${rootmnt} ${init} "$@" <${rootmnt}/dev/console >${rootmnt}/dev/console
+-fi
++exec run-init ${drop_caps} ${rootmnt} ${init} "$@" <${rootmnt}/dev/console >${rootmnt}/dev/console
+ echo "Something went badly wrong in the initramfs."
+ panic "Please file a bug on initramfs-tools."

