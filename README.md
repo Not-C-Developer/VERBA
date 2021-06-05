@@ -52,7 +52,7 @@ Have fun.
 - "[LKM HACKING](http://www.ouah.org/LKM_HACKING.html)", The Hackers Choice (THC), 1999;
 - [http://phrack.org/issues/68/11.html](http://phrack.org/issues/68/11.html)
 - [https://github.com/naworkcaj/bdvl](https://github.com/naworkcaj/bdvl) 'Was... Awesome.'
-- [https://github.com/r00tkillah/HORSEPILL](https://github.com/r00tkillah/HORSEPIL)
+- [https://github.com/r00tkillah/HORSEPILL](https://github.com/r00tkillah/HORSEPILL)
 - [https://github.com/milabs/kmatryoshka](https://github.com/milabs/kmatryoshka)
 
 ## To Do
