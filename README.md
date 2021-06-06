@@ -65,6 +65,6 @@ Have fun.
 
 ---
 
-2019-2021 tg:@Not_C_Developer
+2019-2021 [@Not_C_Developer](https://t.me/Not_C_Developer)
 
 ---
