@@ -41,6 +41,7 @@ cd -
 ```
 
 Copy CLIENT to ./src/CLIENT/
+Put needed SSH and PAM version into ./src/
 
 Copy to target
 ```
