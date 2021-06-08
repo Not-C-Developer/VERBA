@@ -82,8 +82,8 @@ SSHUPATH="./ssh_patches"
 PAMUPATH="./pam_patches"
 patch_ssh_ver=($(ls -1 ${SSHUPATH}/*|cut -f3 -d'/'))
 patch_pam_ver=($(ls -1 ${PAMUPATH}/*|cut -f3 -d'/'))
-SSHNPATH="../src/SSHD"
-PAMNPATH=".,/src/PAM"
+SSHNPATH="./src/SSHD"
+PAMNPATH="./src/PAM"
 
 mkdir -p ${SSHNPATH} ${PAMNPATH}
 
@@ -133,5 +133,5 @@ secho "Successful."
 
 ###
 necho "Cleaning..."
-shred -u ../src/{SSHD,PAM}/*/*.patch
+shred -u ./src/{SSHD,PAM}/*/*.patch
 secho "Successful."

