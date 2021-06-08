@@ -42,8 +42,11 @@ cd -
 
 ## Usage 
 Copy CLIENT to ./src/CLIENT/
+
 Put needed SSH and PAM version into ./src/SSH/ and ./src/PAM/
+
 Copy folder to target
+
 ```
 ./install.sh
 ```
